@@ -1,27 +1,36 @@
 #!/usr/bin/python3
 import uuid
 import datetime
+import models
 
 class BaseModel:
-    def __init__(self):
-        self.id = str(uuid.uuid4())
-        self.create_at = datetime.datetime.now()
-        self.update_at = datetime.datetime.now()
-
-        
+    def __init__(self, *args, **kwargs):
+        if kwargs is None or len(kwargs) < 1:
+            self.id = str(uuid.uuid4())
+            self.created_at = datetime.datetime.now()
+            self.updated_at = datetime.datetime.now()
+            models.storage.new(self)
+        else:
+            for key in kwargs:
+                if key != "__class__":
+                    setattr(self, key, kwargs[key])
+            self.created_at = datetime.datetime.fromisoformat(kwargs["created_at"])
+            self.updated_at = datetime.datetime.fromisoformat(kwargs["updated_at"])
+ 
     def __str__(self,):
         x = "[{}] ({}) {}".format(type(self).__name__, self.id, self.__dict__)
         return x
 
     def save(self):
-        self.update_at = datetime.datetime.now()
+        self.updated_at = datetime.datetime.now()
+        models.storage.save()
 
 
     def to_dict(self):
         dic_n = self.__dict__.copy()
-        if 'create_at' in dic_n:
-            dic_n['create_at'] = (dic_n['create_at']).isoformat()
-        if 'update_at' in dic_n:
-            dic_n['update_at'] = (dic_n['update_at']).isoformat()
+        if 'created_at' in dic_n:
+            dic_n['created_at'] = (dic_n['created_at']).isoformat()
+        if 'updated_at' in dic_n:
+            dic_n['updated_at'] = (dic_n['updated_at']).isoformat()
         dic_n['__class__'] = self.__class__.__name__
         return dic_n

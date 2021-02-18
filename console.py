@@ -1,32 +1,33 @@
 #!/usr/bin/python3
-"""
-a command interpreter for the AirBnB clone
-"""
-
+""" a command interpreter for the AirBnB clone """
 import cmd
 from datetime import datetime
-from shlex import split  
+from shlex import split
 import models
 
 
-
 class HBNBCommand(cmd.Cmd):
+    """ class HBNBCommand """
     prompt = '(hbnb) '
 
     classes = ["Basemodel"]
 
     def do_EOF(self, arg):
+        """ class do_EOF """
         return True
 
     def emptyline(self):
+        """ emptyline """
         if self.lastcmd:
             self.lastcmd = ""
             return self.onecmd("\n")
 
     def do_quit(self, arg):
+        """ do_quit """
         return True
 
     def do_create(self, arg):
+        """ do_create """
         args = split(arg)
         if len(args) == 0:
             print("** class name missing **")

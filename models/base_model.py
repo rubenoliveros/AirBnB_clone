@@ -18,11 +18,12 @@ class BaseModel:
             self.updated_at = datetime.now()
             models.storage.new(self)
         else:
-            for key in kwargs:
+            for key, value in kwargs.items():
                 if key != "__class__":
-                    setattr(self, key, kwargs[key])
-            self.created_at = datetime.fromisoformat(kwargs["created_at"])
-            self.updated_at = datetime.fromisoformat(kwargs["updated_at"])
+                    if key == "created_at" or key == "updated_at":
+                        value = datetime.datetime.strptime(
+                            value, '%Y-%m-%dT%H:%M:%S.%f')
+                    setattr(self, key, value)
 
     def __str__(self,):
         """String representation of the BaseModel class"""
@@ -32,6 +33,7 @@ class BaseModel:
     def save(self):
         """updates the class with the current time"""
         self.updated_at = datetime.now()
+        models.storage.new(self)
         models.storage.save()
 
     def to_dict(self):

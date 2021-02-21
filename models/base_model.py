@@ -21,13 +21,14 @@ class BaseModel:
             for key, value in kwargs.items():
                 if key != "__class__":
                     if key == "created_at" or key == "updated_at":
-                        value = datetime.datetime.strptime(
+                        value = datetime.strptime(
                             value, '%Y-%m-%dT%H:%M:%S.%f')
                     setattr(self, key, value)
 
     def __str__(self,):
         """String representation of the BaseModel class"""
-        x = "[{}] ({}) {}".format(type(self).__name__, self.id, self.__dict__)
+        x = "[{}] ({}) {}".format(self.__class__.__name__,
+                                  self.id, self.__dict__)
         return x
 
     def save(self):
@@ -39,9 +40,7 @@ class BaseModel:
     def to_dict(self):
         """returns a dictionary containing all key-value pairs"""
         dic_n = self.__dict__.copy()
-        if 'created_at' in dic_n:
-            dic_n['created_at'] = (dic_n['created_at']).isoformat()
-        if 'updated_at' in dic_n:
-            dic_n['updated_at'] = (dic_n['updated_at']).isoformat()
+        dic_n['created_at'] = self.created_at.isoformat()
+        dic_n['updated_at'] = self.updated_at.isoformat()
         dic_n['__class__'] = self.__class__.__name__
         return dic_n

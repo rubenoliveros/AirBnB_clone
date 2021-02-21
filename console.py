@@ -1,149 +1,223 @@
 #!/usr/bin/python3
-"""
-a command interpreter for the AirBnB clone
-"""
-
+""" Module for Console """
 import cmd
-from datetime import datetime
-import models
-from models.amenity import Amenity
 from models.base_model import BaseModel
-from models.city import City
-from models.place import Place
-from models.review import Review
-from models.state import State
 from models.user import User
-from shlex import split
-
-classes = {"Amenity": Amenity, "BaseModel": BaseModel, "City": City,
-           "Place": Place, "Review": Review, "State": State, "User": User}
+from models.city import City
+from models.state import State
+from models.place import Place
+from models.amenity import Amenity
+from models.review import Review
+from models import storage
+import shlex
 
 
 class HBNBCommand(cmd.Cmd):
-    """Class to start the console"""
-    prompt = '(hbnb) '
 
-    def do_EOF(self, arg):
-        """ed of Line - exits the console"""
+    __dict_class = {"BaseModel": BaseModel, "User": User,
+                    "City": City, "State": State, "Place": Place,
+                    "Amenity": Amenity, "Review": Review}
+
+    prompt = "(hbnb) "
+
+    def do_EOF(self, line):
+        """Exit command to exit the program
+        """
+        return True
+
+    def do_quit(self, line):
+        """Quit command to exit the program
+        """
         return True
 
     def emptyline(self):
-        """function for the emtyline method"""
-        if self.lastcmd:
-            self.lastcmd = ""
-            return self.onecmd("\n")
+        """an empty line + ENTER shouldn’t execute anything
+        """
+        pass
 
-    def do_quit(self, arg):
-        """quits the console"""
-        return True
+    def do_create(self, line):
+        """Creates a new instance of the class
+        """
+        line_tokenized = HBNBCommand.do_manage(line)
 
-    def do_create(self, arg):
-        """creates a new instance"""
-        args = split(arg)
-        if len(args) == 0:
-            print("** class name missing **")
-            return False
-        if args[0] in self.classes:
-            instance = classes[args[0]]()
+        if line_tokenized:
+            if not line_tokenized[0] in HBNBCommand.__dict_class:
+                print("** class doesn't exist **")
+                return
+            instance = HBNBCommand.__dict_class[line_tokenized[0]]()
+            storage.save()
+            print(instance.id)
         else:
-            print("** class doesn't exist **")
-            return False
-        print(instance.id)
-        instance.save()
-
-    def do_show(self, arg):
-        """Prints an instance as a string based on the class and id"""
-        args = split(arg)
-        if len(args) == 0:
             print("** class name missing **")
-            return False
-        if args[0] in classes:
-            if len(args) > 1:
-                key = args[0] + "." + args[1]
-                if key in models.storage.all():
-                    print(models.storage.all()[key])
-                else:
+
+    def do_show(self, line):
+        """Prints the string representation of an instance
+        based on the class name
+        """
+        line_tokenized = HBNBCommand.do_manage(line)
+
+        if line_tokenized:
+            if not line_tokenized[0] in HBNBCommand.__dict_class:
+                print("** class doesn't exist **")
+                return
+
+            if len(line_tokenized) >= 2 and line_tokenized[1]:
+                key = line_tokenized[0]+"."+line_tokenized[1]
+                dictionary = storage.all()
+                try:
+                    print(dictionary[key])
+                except BaseException:
                     print("** no instance found **")
+                    return
             else:
                 print("** instance id missing **")
+                return
         else:
-            print("** class doesn't exist **")
-
-    def do_destroy(self, arg):
-        """Deletes an instance based on the class and id"""
-        args = split(arg)
-        if len(args) == 0:
             print("** class name missing **")
-        elif args[0] in classes:
-            if len(args) > 1:
-                key = args[0] + "." + args[1]
-                if key in models.storage.all():
-                    models.storage.all().pop(key)
-                    models.storage.save()
-                else:
+
+    def do_destroy(self, line):
+        """Deletes an instance based on the class name and id
+        """
+        line_tokenized = HBNBCommand.do_manage(line)
+
+        if line_tokenized:
+            if not line_tokenized[0] in HBNBCommand.__dict_class:
+                print("** class doesn't exist **")
+                return
+
+            if len(line_tokenized) >= 2 and line_tokenized[1]:
+                key = line_tokenized[0]+"."+line_tokenized[1]
+                dictionary = storage.all()
+                try:
+                    del(dictionary[key])
+                    storage.save()
+                except BaseException:
                     print("** no instance found **")
+                    return
             else:
                 print("** instance id missing **")
+                return
         else:
-            print("** class doesn't exist **")
-
-    def do_all(self, arg):
-        """Prints string representations of instances"""
-        args = split(arg)
-        obj_list = []
-        if len(args) == 0:
-            for value in models.storage.all().values():
-                obj_list.append(str(value))
-            print("[", end="")
-            print(", ".join(obj_list), end="")
-            print("]")
-        elif args[0] in classes:
-            for key in models.storage.all():
-                if args[0] in key:
-                    obj_list.append(str(models.storage.all()[key]))
-            print("[", end="")
-            print(", ".join(obj_list), end="")
-            print("]")
-        else:
-            print("** class doesn't exist **")
-
-    def do_update(self, arg):
-        """Update an instance based on the class name, id, attribute & value"""
-        args = split(arg)
-        integers = ["number_rooms", "number_bathrooms", "max_guest",
-                    "price_by_night"]
-        floats = ["latitude", "longitude"]
-        if len(args) == 0:
             print("** class name missing **")
-        elif args[0] in classes:
-            if len(args) > 1:
-                k = args[0] + "." + args[1]
-                if k in models.storage.all():
-                    if len(args) > 2:
-                        if len(args) > 3:
-                            if args[0] == "Place":
-                                if args[2] in integers:
-                                    try:
-                                        args[3] = int(args[3])
-                                    except:
-                                        args[3] = 0
-                                elif args[2] in floats:
-                                    try:
-                                        args[3] = float(args[3])
-                                    except:
-                                        args[3] = 0.0
-                            setattr(models.storage.all()[k], args[2], args[3])
-                            models.storage.all()[k].save()
-                        else:
-                            print("** value missing **")
-                    else:
-                        print("** attribute name missing **")
-                else:
+
+    def do_all(self, line):
+        """Prints all string representation of all
+        instances based or not on the class name
+        """
+        line_tokenized = HBNBCommand.do_manage(line)
+        if line_tokenized:
+            if not line_tokenized[0] in HBNBCommand.__dict_class:
+                print("** class doesn't exist **")
+                return
+
+        dictionary = storage.all()
+        list_objects = []
+        for key, value in dictionary.items():
+            if len(line_tokenized) >= 1:
+                token = key
+                token = str(token).split(".")
+                if token[0] == line_tokenized[0]:
+                    list_objects.append(str(dictionary[key]))
+            else:
+                list_objects.append(str(dictionary[key]))
+        print(list_objects)
+
+    def do_update(self, line):
+        """Updates an instance based on the class name and
+        id by adding or updating attribute
+        """
+        line_tokenized = HBNBCommand.do_manage(line)
+
+        if line:
+            if not line_tokenized[0] in HBNBCommand.__dict_class:
+                print("** class doesn't exist **")
+                return
+
+            if len(line_tokenized) >= 2 and line_tokenized[1]:
+                key = line_tokenized[0]+"."+line_tokenized[1]
+                dictionary = storage.all()
+                try:
+                    dictionary[key]
+                except BaseException:
                     print("** no instance found **")
+                    return
             else:
                 print("** instance id missing **")
+                return
+
+            if not len(line_tokenized) >= 3:
+                print("** attribute name missing **")
+                return
+
+            if not len(line_tokenized) >= 4:
+                print("** value missing **")
+                return
+            instance = dictionary[key].__dict__
+            instance[line_tokenized[2]] = line_tokenized[3]
+            dictionary.get(key).save()
         else:
-            print("** class doesn't exist **")
+            print("** class name missing **")
+
+    def do_manage(line):
+        """splits the line arguments splits and return an array
+        """
+        tokens = shlex.split(line)
+        return list(tokens)
+
+    def default(self, line):
+        """this function print or execute an action if the control is true
+        """
+        line_token = line.split(".")
+        if len(line_token) >= 2 and line_token[0] in HBNBCommand.__dict_class:
+            if line_token[1] == "all()":
+                HBNBCommand.do_all(self, line_token[0])
+            # count the class
+            if line_token[1] == "count()":
+                HBNBCommand.do_counter(self, line_token[0])
+        if line_token[1][0] == "s":
+            tmp = line_token[1]
+            comand = tmp[0:4]
+            star = tmp.index("\"")
+            end = tmp.index(")")
+            cls_id = tmp[(star + 1):(end - 1)]
+            if comand == "show":
+                key = line_token[0]+" " + cls_id
+                HBNBCommand.do_show(self, key)
+        if line_token[1][0] == "d":
+            tmp = line_token[1]
+            comand = tmp[0:7]
+            star = tmp.index("\"")
+            end = tmp.index(")")
+            cls_id = tmp[(star + 1):(end - 1)]
+            if comand == "destroy":
+                key = line_token[0]+" " + cls_id
+                HBNBCommand.do_destroy(self, key)
+
+        if line_token[1][0] == "u":
+            tmp = line_token[1]
+            comand = tmp[0:6]
+            star = tmp.index("\"")
+            end = tmp.index(")")
+            input_update = tmp[star:end]
+            input_update = input_update.split(",")
+            cls_id = input_update[0][1:-1]
+            name_atr = input_update[1][1:]
+            value_atr = input_update[2][1:]
+            key = line_token[0]+" "+cls_id+" "+name_atr+" "+value_atr
+            HBNBCommand.do_update(self, key)
+
+    def do_counter(self, line):
+        """ Counter of class
+        """
+        dictionary = storage.all()
+        count = 0
+        tmp_key = ""
+        for key, value in dictionary.items():
+            tmp_key = key.split(".")
+            if tmp_key[0] == line:
+                count += 1
+        print(count)
+
 
 if __name__ == '__main__':
     HBNBCommand().cmdloop()

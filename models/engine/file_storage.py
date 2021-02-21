@@ -27,9 +27,7 @@ class FileStorage:
 
     def new(self, obj):
         """sets obj with the class name ID"""
-        if obj is not None:
-            key = obj.__class__.__name__ + "." + obj.id
-            self.__objects[key] = obj
+        self.__objects[str(obj.__class__.__name__ + "." + obj.id)] = obj
 
     def save(self):
         """serializes __objects to the JSON file"""
@@ -41,10 +39,13 @@ class FileStorage:
 
     def reload(self):
         """deserializes the JSON file to __objects"""
+          """ Reload method """
         try:
-            with open(self.__file_path, mode="r", encoding="utf-8") as file:
-                new_dict = json.load(file)
-                for key, value in new_dict.items():
-                    self.__objects[key] = eval("BaseModel(**value)")
+            with open(FileStorage.__file_path, "r") as f:
+                tmp_dict = json.load(f)
+            for item in tmp_dict.values():
+                cls_name = item["__class__"]
+                del item["__class__"]
+                self.new(eval(cls_name)(**item))
         except:
             pass

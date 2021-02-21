@@ -38,8 +38,7 @@ class FileStorage:
             json.dump(new_dic, file)
 
     def reload(self):
-        """deserializes the JSON file to __objects"""
-          """ Reload method """
+        """ Reload method """
         try:
             with open(FileStorage.__file_path, "r") as f:
                 tmp_dict = json.load(f)
